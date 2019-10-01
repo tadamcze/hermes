@@ -4,6 +4,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericArray;
 import org.apache.avro.generic.GenericRecord;
 import pl.allegro.tech.hermes.api.ContentType;
+import pl.allegro.tech.hermes.common.message.converter.AvroRecordConverter;
 import pl.allegro.tech.hermes.consumers.consumer.Message;
 import pl.allegro.tech.hermes.consumers.consumer.filtering.FilteringException;
 import pl.allegro.tech.hermes.schema.CompiledSchema;
@@ -22,7 +23,6 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyListIterator;
 import static java.util.Collections.singletonList;
 import static org.apache.commons.lang.StringUtils.strip;
-import static pl.allegro.tech.hermes.common.message.converter.AvroRecordToBytesConverter.bytesToRecord;
 import static pl.allegro.tech.hermes.consumers.consumer.filtering.FilteringException.check;
 
 public class AvroPathPredicate implements Predicate<Message> {
@@ -35,10 +35,12 @@ public class AvroPathPredicate implements Predicate<Message> {
     private static final String NULL_AS_STRING = "null";
     private List<String> path;
     private Pattern pattern;
+    private final AvroRecordConverter avroRecordConverter;
 
-    public AvroPathPredicate(String path, Pattern pattern) {
+    public AvroPathPredicate(String path, Pattern pattern, AvroRecordConverter avroRecordConverter) {
         this.path = Arrays.asList(strip(path, ".").split("\\."));
         this.pattern = pattern;
+        this.avroRecordConverter = avroRecordConverter;
     }
 
     @Override
@@ -57,7 +59,7 @@ public class AvroPathPredicate implements Predicate<Message> {
 
     private List<Object> select(final Message message) throws IOException {
         CompiledSchema<Schema> compiledSchema = message.<Schema>getSchema().get();
-        return select(bytesToRecord(message.getData(), compiledSchema.getSchema()));
+        return select(avroRecordConverter.avroBytesToRecord(message.getData(), compiledSchema.getSchema()));
     }
 
     private List<Object> select(GenericRecord record) {

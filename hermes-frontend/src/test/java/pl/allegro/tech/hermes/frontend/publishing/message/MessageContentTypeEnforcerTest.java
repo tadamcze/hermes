@@ -4,6 +4,8 @@ import org.apache.avro.Schema;
 import org.junit.Test;
 import pl.allegro.tech.hermes.api.ContentType;
 import pl.allegro.tech.hermes.api.Topic;
+import pl.allegro.tech.hermes.common.message.converter.AvroRecordConverter;
+import pl.allegro.tech.hermes.common.message.converter.DefaultGenericDatumReaderFactory;
 import pl.allegro.tech.hermes.common.message.wrapper.UnsupportedContentTypeException;
 import pl.allegro.tech.hermes.schema.CompiledSchema;
 import pl.allegro.tech.hermes.schema.SchemaVersion;
@@ -18,7 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class MessageContentTypeEnforcerTest {
 
-    private MessageContentTypeEnforcer enforcer = new MessageContentTypeEnforcer();
+    private AvroRecordConverter avroRecordConverter = new AvroRecordConverter(new DefaultGenericDatumReaderFactory());
+    private MessageContentTypeEnforcer enforcer = new MessageContentTypeEnforcer(avroRecordConverter);
 
     private Topic topic = TopicBuilder.topic("test.Topic").withContentType(ContentType.AVRO).build();
     private AvroUser avroMessage = new AvroUser("Bob", 30, "black");

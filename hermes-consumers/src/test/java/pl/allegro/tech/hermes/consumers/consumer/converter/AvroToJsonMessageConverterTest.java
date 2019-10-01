@@ -4,6 +4,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 import pl.allegro.tech.hermes.api.Topic;
+import pl.allegro.tech.hermes.common.message.converter.AvroRecordConverter;
+import pl.allegro.tech.hermes.common.message.converter.DefaultGenericDatumReaderFactory;
 import pl.allegro.tech.hermes.consumers.consumer.Message;
 import pl.allegro.tech.hermes.schema.CompiledSchema;
 import pl.allegro.tech.hermes.schema.SchemaVersion;
@@ -29,7 +31,8 @@ public class AvroToJsonMessageConverterTest {
                 .withSchema(new CompiledSchema<>(avroUser.getSchema(), SchemaVersion.valueOf(0)))
                 .withExternalMetadata(of())
                 .build();
-        AvroToJsonMessageConverter converter = new AvroToJsonMessageConverter();
+        AvroRecordConverter avroRecordConverter = new AvroRecordConverter(new DefaultGenericDatumReaderFactory());
+        AvroToJsonMessageConverter converter = new AvroToJsonMessageConverter(avroRecordConverter);
 
         // when
         Message target = converter.convert(source, topic);

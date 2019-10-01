@@ -5,6 +5,9 @@ import org.glassfish.hk2.api.TypeLiteral;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import pl.allegro.tech.hermes.common.admin.zookeeper.ZookeeperAdminCache;
 import pl.allegro.tech.hermes.common.di.factories.UndeliveredMessageLogFactory;
+import pl.allegro.tech.hermes.common.message.converter.AvroRecordConverter;
+import pl.allegro.tech.hermes.common.message.converter.ConfigurableGenericDatumReaderFactory;
+import pl.allegro.tech.hermes.common.message.converter.GenericDatumReaderFactory;
 import pl.allegro.tech.hermes.common.message.undelivered.UndeliveredMessageLog;
 import pl.allegro.tech.hermes.common.metric.executor.InstrumentedExecutorServiceFactory;
 import pl.allegro.tech.hermes.consumers.consumer.ActiveConsumerCounter;
@@ -15,6 +18,7 @@ import pl.allegro.tech.hermes.consumers.consumer.batch.MessageBatchFactory;
 import pl.allegro.tech.hermes.consumers.consumer.converter.AvroToJsonMessageConverter;
 import pl.allegro.tech.hermes.consumers.consumer.converter.MessageConverterResolver;
 import pl.allegro.tech.hermes.consumers.consumer.converter.NoOperationMessageConverter;
+import pl.allegro.tech.hermes.consumers.consumer.filtering.CustomizedMessageFilters;
 import pl.allegro.tech.hermes.consumers.consumer.filtering.MessageFilterSource;
 import pl.allegro.tech.hermes.consumers.consumer.filtering.MessageFilters;
 import pl.allegro.tech.hermes.consumers.consumer.filtering.chain.FilterChainFactory;
@@ -81,12 +85,11 @@ import pl.allegro.tech.hermes.consumers.supervisor.workload.SupervisorController
 import pl.allegro.tech.hermes.consumers.supervisor.workload.SupervisorControllerFactory;
 import pl.allegro.tech.hermes.consumers.supervisor.workload.WorkTracker;
 import pl.allegro.tech.hermes.consumers.supervisor.workload.WorkTrackerFactory;
-import pl.allegro.tech.hermes.domain.workload.constraints.WorkloadConstraintsRepository;
-import pl.allegro.tech.hermes.common.di.factories.WorkloadConstraintsRepositoryFactory;
 
 import javax.inject.Singleton;
 import javax.jms.Message;
-import java.util.Collections;
+
+import static java.util.Collections.emptyList;
 
 public class ConsumersBinder extends AbstractBinder {
 
@@ -116,6 +119,8 @@ public class ConsumersBinder extends AbstractBinder {
         bindSingleton(ConsumerMessageSenderFactory.class);
         bindSingleton(NoOperationMessageConverter.class);
         bindSingleton(AvroToJsonMessageConverter.class);
+        bind(ConfigurableGenericDatumReaderFactory.class).in(Singleton.class).to(GenericDatumReaderFactory.class);
+        bindSingleton(AvroRecordConverter.class);
         bindSingleton(MessageConverterResolver.class);
         bindSingleton(OffsetQueue.class);
         bindSingleton(ConsumerPartitionAssignmentState.class);
@@ -152,7 +157,8 @@ public class ConsumersBinder extends AbstractBinder {
         bindFactory(ByteBufferMessageBatchFactoryProvider.class).in(Singleton.class).to(MessageBatchFactory.class);
         bind(HttpMessageBatchSenderFactory.class).to(MessageBatchSenderFactory.class).in(Singleton.class);
         bindSingleton(FilterChainFactory.class);
-        bind(new MessageFilters(Collections.emptyList(), Collections.emptyList())).to(MessageFilterSource.class);
+        bind(new CustomizedMessageFilters(emptyList(), emptyList()));
+        bind(MessageFilters.class).in(Singleton.class).to(MessageFilterSource.class);
 
         bind(OAuthConsumerAuthorizationHandler.class).in(Singleton.class).to(ConsumerAuthorizationHandler.class);
         bindSingleton(OAuthSubscriptionHandlerFactory.class);

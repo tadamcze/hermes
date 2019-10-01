@@ -2,14 +2,20 @@ package pl.allegro.tech.hermes.consumers.consumer.filtering
 
 import pl.allegro.tech.hermes.api.ContentType
 import pl.allegro.tech.hermes.api.MessageFilterSpecification
+import pl.allegro.tech.hermes.common.message.converter.AvroRecordConverter
+import pl.allegro.tech.hermes.common.message.converter.DefaultGenericDatumReaderFactory
 import pl.allegro.tech.hermes.consumers.consumer.filtering.avro.AvroPathSubscriptionMessageFilterCompiler
 import pl.allegro.tech.hermes.consumers.test.MessageBuilder
 import pl.allegro.tech.hermes.test.helper.avro.AvroUserSchemaLoader
 import spock.lang.Specification
+import spock.lang.Subject
 import spock.lang.Unroll
 import tech.allegro.schema.json2avro.converter.JsonAvroConverter
 
 class AvroPathMessageFilterSpec extends Specification {
+
+    @Subject
+    def compiler = new AvroPathSubscriptionMessageFilterCompiler(new AvroRecordConverter(new DefaultGenericDatumReaderFactory()))
 
     @Unroll
     def "basic paths"(String path, String matcher, boolean result) {
@@ -45,7 +51,7 @@ class AvroPathMessageFilterSpec extends Specification {
                 .build()
 
         expect:
-        result == new AvroPathSubscriptionMessageFilterCompiler().compile(spec).test(msg)
+        result == compiler.compile(spec).test(msg)
 
         where:
         path                      | matcher     | result
@@ -108,7 +114,7 @@ class AvroPathMessageFilterSpec extends Specification {
             .build()
 
         expect:
-        result == new AvroPathSubscriptionMessageFilterCompiler().compile(spec).test(msg)
+        result == compiler.compile(spec).test(msg)
 
         where:
         path                 | matcher        | result
@@ -134,7 +140,7 @@ class AvroPathMessageFilterSpec extends Specification {
         def invalidContent = new byte[10]
 
         when:
-        new AvroPathSubscriptionMessageFilterCompiler().compile(new MessageFilterSpecification([path: ".id", matcher: "0001"]))
+        compiler.compile(new MessageFilterSpecification([path: ".id", matcher: "0001"]))
                 .test(MessageBuilder
                 .withTestMessage()
                 .withContent(invalidContent)

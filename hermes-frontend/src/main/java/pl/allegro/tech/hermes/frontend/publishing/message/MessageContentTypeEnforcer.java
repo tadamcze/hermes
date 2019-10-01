@@ -3,8 +3,11 @@ package pl.allegro.tech.hermes.frontend.publishing.message;
 import org.apache.avro.Schema;
 import org.apache.commons.lang.StringUtils;
 import pl.allegro.tech.hermes.api.Topic;
+import pl.allegro.tech.hermes.common.message.converter.AvroRecordConverter;
 import pl.allegro.tech.hermes.common.message.wrapper.UnsupportedContentTypeException;
 import tech.allegro.schema.json2avro.converter.JsonAvroConverter;
+
+import javax.inject.Inject;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static pl.allegro.tech.hermes.api.AvroMediaType.AVRO_BINARY;
@@ -13,11 +16,16 @@ import static pl.allegro.tech.hermes.api.AvroMediaType.AVRO_JSON;
 public class MessageContentTypeEnforcer {
 
     private final JsonAvroConverter defaultJsonAvroconverter = new JsonAvroConverter();
-    private final AvroEncodedJsonAvroConverter avroEncodedJsonAvroConverter = new AvroEncodedJsonAvroConverter();
+    private final AvroEncodedJsonAvroConverter avroEncodedJsonAvroConverter;
 
     private static final String APPLICATION_JSON_WITH_DELIM = APPLICATION_JSON + ";";
     private static final String AVRO_JSON_WITH_DELIM = AVRO_JSON + ";";
     private static final String AVRO_BINARY_WITH_DELIM = AVRO_BINARY + ";";
+
+    @Inject
+    public MessageContentTypeEnforcer(AvroRecordConverter avroRecordConverter) {
+        avroEncodedJsonAvroConverter = new AvroEncodedJsonAvroConverter(avroRecordConverter);
+    }
 
     public byte[] enforceAvro(String payloadContentType, byte[] data, Schema schema, Topic topic) {
         String contentTypeLowerCase = StringUtils.lowerCase(payloadContentType);

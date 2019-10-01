@@ -3,6 +3,7 @@ package pl.allegro.tech.hermes.common.message.wrapper;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.util.Utf8;
+import pl.allegro.tech.hermes.common.message.converter.AvroRecordConverter;
 import pl.allegro.tech.hermes.schema.CompiledSchema;
 
 import javax.inject.Inject;
@@ -13,8 +14,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static pl.allegro.tech.hermes.common.message.converter.AvroRecordToBytesConverter.bytesToRecord;
-import static pl.allegro.tech.hermes.common.message.converter.AvroRecordToBytesConverter.recordToBytes;
 import static pl.allegro.tech.hermes.common.message.wrapper.AvroMetadataMarker.METADATA_MARKER;
 import static pl.allegro.tech.hermes.common.message.wrapper.AvroMetadataMarker.METADATA_MESSAGE_ID_KEY;
 import static pl.allegro.tech.hermes.common.message.wrapper.AvroMetadataMarker.METADATA_TIMESTAMP_KEY;
@@ -26,16 +25,19 @@ import static pl.allegro.tech.hermes.common.message.wrapper.AvroMetadataMarker.M
 public class AvroMessageContentWrapper {
 
     private final Clock clock;
+    private final AvroRecordConverter avroRecordConverter;
 
     @Inject
-    public AvroMessageContentWrapper(Clock clock) {
+    public AvroMessageContentWrapper(Clock clock, AvroRecordConverter avroRecordConverter) {
         this.clock = clock;
+        this.avroRecordConverter = avroRecordConverter;
     }
 
     @SuppressWarnings("unchecked")
     UnwrappedMessageContent unwrapContent(byte[] data, CompiledSchema<Schema> schema) {
         try {
-            Map<Utf8, Utf8> metadata = (Map<Utf8, Utf8>) bytesToRecord(data, schema.getSchema()).get(METADATA_MARKER);
+            GenericRecord record = avroRecordConverter.avroBytesToRecord(data, schema.getSchema());
+            Map<Utf8, Utf8> metadata = (Map<Utf8, Utf8>) record.get(METADATA_MARKER);
             MessageMetadata messageMetadata = getMetadata(metadata);
 
             return new UnwrappedMessageContent(messageMetadata, data, schema);
@@ -61,9 +63,9 @@ public class AvroMessageContentWrapper {
 
     byte[] wrapContent(byte[] message, String id, long timestamp, Schema schema, Map<String, String> externalMetadata) {
         try {
-            GenericRecord genericRecord = bytesToRecord(message, schema);
+            GenericRecord genericRecord = avroRecordConverter.avroBytesToRecord(message, schema);
             genericRecord.put(METADATA_MARKER, metadataMap(id, timestamp, externalMetadata));
-            return recordToBytes(genericRecord, schema);
+            return avroRecordConverter.recordToAvroBytes(genericRecord, schema);
         } catch (Exception exception) {
             throw new WrappingException("Could not wrap avro message", exception);
         }

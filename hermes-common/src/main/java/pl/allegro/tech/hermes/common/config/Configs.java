@@ -260,6 +260,9 @@ public enum Configs {
     METRICS_COUNTER_EXPIRE_AFTER_ACCESS("metrics.counter.expire.after.access", 72),
     METRICS_RESERVOIR_TYPE("metrics.reservoir.type", "exponentially_decaying"),
 
+    AVRO_DECODER_CACHE_TYPE("avro.decoder.cache.type", "weak_reference"),
+    AVRO_DECODER_CACHE_MAX_SIZE("avro.decoder.cache.max.size", 100),
+
     GLOBAL_SHUTDOWN_HOOK_REGISTERED("global.shutdown.hook.registered", true),
 
     MESSAGE_CONTENT_ROOT("message.content.root", "message"),

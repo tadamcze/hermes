@@ -1,16 +1,21 @@
 package pl.allegro.tech.hermes.frontend.validator;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericDatumReader;
-import org.apache.avro.io.BinaryDecoder;
-import org.apache.avro.io.DecoderFactory;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import pl.allegro.tech.hermes.api.ContentType;
 import pl.allegro.tech.hermes.api.Topic;
+import pl.allegro.tech.hermes.common.message.converter.AvroRecordConverter;
 import pl.allegro.tech.hermes.frontend.publishing.message.Message;
 
+import javax.inject.Inject;
+
 public class AvroTopicMessageValidator implements TopicMessageValidator {
+    private final AvroRecordConverter avroRecordConverter;
+
+    @Inject
+    public AvroTopicMessageValidator(AvroRecordConverter avroRecordConverter) {
+        this.avroRecordConverter = avroRecordConverter;
+    }
 
     @Override
     public void check(Message message, Topic topic) {
@@ -18,9 +23,8 @@ public class AvroTopicMessageValidator implements TopicMessageValidator {
             return;
         }
 
-        BinaryDecoder binaryDecoder = DecoderFactory.get().binaryDecoder(message.getData(), null);
         try {
-            new GenericDatumReader<>(message.getSchema()).read(null, binaryDecoder);
+            avroRecordConverter.avroBytesToRecord(message.getData(), message.getSchema());
         } catch (Exception e) {
             String reason = e.getMessage() == null ? ExceptionUtils.getRootCauseMessage(e) : e.getMessage();
             throw new InvalidMessageException("Could not deserialize avro message with provided schema", ImmutableList.of(reason));

@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import pl.allegro.tech.hermes.common.message.converter.AvroRecordConverter;
+import pl.allegro.tech.hermes.common.message.converter.DefaultGenericDatumReaderFactory;
 import pl.allegro.tech.hermes.common.message.wrapper.AvroMessageContentWrapper;
 import pl.allegro.tech.hermes.common.message.wrapper.DeserializationMetrics;
 import pl.allegro.tech.hermes.common.message.wrapper.JsonMessageContentWrapper;
@@ -35,8 +37,14 @@ public class MessageConfiguration {
 
     @Bean
     MessageContentWrapper messageContentWrapper() {
-        return new MessageContentWrapper(jsonMessageContentWrapper(), new AvroMessageContentWrapper(clock), schemaRepository,
-                () -> true, new DeserializationMetrics(metricRegistry));
+        AvroRecordConverter avroRecordConverter = new AvroRecordConverter(new DefaultGenericDatumReaderFactory());
+        return new MessageContentWrapper(
+                jsonMessageContentWrapper(),
+                new AvroMessageContentWrapper(clock, avroRecordConverter),
+                schemaRepository,
+                () -> true,
+                new DeserializationMetrics(metricRegistry)
+        );
     }
 
     private JsonMessageContentWrapper jsonMessageContentWrapper() {

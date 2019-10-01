@@ -1,13 +1,11 @@
 package pl.allegro.tech.hermes.consumers.consumer.converter;
 
 import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericRecordBuilder;
-import org.apache.avro.io.BinaryDecoder;
-import org.apache.avro.io.DecoderFactory;
 import pl.allegro.tech.hermes.api.ContentType;
 import pl.allegro.tech.hermes.api.Topic;
+import pl.allegro.tech.hermes.common.message.converter.AvroRecordConverter;
 import pl.allegro.tech.hermes.consumers.consumer.Message;
 import tech.allegro.schema.json2avro.converter.AvroConversionException;
 import tech.allegro.schema.json2avro.converter.JsonAvroConverter;
@@ -22,9 +20,11 @@ import static pl.allegro.tech.hermes.consumers.consumer.Message.message;
 public class AvroToJsonMessageConverter implements MessageConverter {
 
     private final JsonAvroConverter converter;
+    private final AvroRecordConverter avroRecordConverter;
 
     @Inject
-    public AvroToJsonMessageConverter() {
+    public AvroToJsonMessageConverter(AvroRecordConverter avroRecordConverter) {
+        this.avroRecordConverter = avroRecordConverter;
         this.converter = new JsonAvroConverter();
     }
 
@@ -56,8 +56,7 @@ public class AvroToJsonMessageConverter implements MessageConverter {
 
     private GenericRecord originalRecord(byte[] data, Schema schema) {
         try {
-            BinaryDecoder binaryDecoder = DecoderFactory.get().binaryDecoder(data, null);
-            return new GenericDatumReader<GenericRecord>(schema).read(null, binaryDecoder);
+            return avroRecordConverter.avroBytesToRecord(data, schema);
         } catch (IOException e) {
             throw new AvroConversionException("Failed to create avro record.", e);
         }

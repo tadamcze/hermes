@@ -1,7 +1,13 @@
 package pl.allegro.tech.hermes.consumers.consumer.filtering;
 
 import pl.allegro.tech.hermes.api.MessageFilterSpecification;
+import pl.allegro.tech.hermes.common.message.converter.AvroRecordConverter;
+import pl.allegro.tech.hermes.consumers.consumer.filtering.avro.AvroPathSubscriptionMessageFilterCompiler;
+import pl.allegro.tech.hermes.consumers.consumer.filtering.header.HeaderSubscriptionMessageFilterCompiler;
+import pl.allegro.tech.hermes.consumers.consumer.filtering.json.JsonPathSubscriptionMessageFilterCompiler;
 
+import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -12,10 +18,14 @@ public class MessageFilters implements MessageFilterSource {
     private Map<String, SubscriptionMessageFilterCompiler> filters;
     private List<MessageFilter> globalFilters;
 
-    public MessageFilters(List<MessageFilter> globalFilters,
-                          List<SubscriptionMessageFilterCompiler> subscriptionFilterCompilers) {
-        this.globalFilters = globalFilters;
-        this.filters = subscriptionFilterCompilers.stream().collect(toMap(SubscriptionMessageFilterCompiler::getType, identity()));
+    @Inject
+    public MessageFilters(AvroRecordConverter avroRecordConverter, CustomizedMessageFilters customizedMessageFilters) {
+        this.globalFilters = customizedMessageFilters.getGlobalFilters();
+        List<SubscriptionMessageFilterCompiler> availableFilters = new ArrayList<>(customizedMessageFilters.getSubscriptionFilters());
+        availableFilters.add(new JsonPathSubscriptionMessageFilterCompiler());
+        availableFilters.add(new AvroPathSubscriptionMessageFilterCompiler(avroRecordConverter));
+        availableFilters.add(new HeaderSubscriptionMessageFilterCompiler());
+        this.filters = availableFilters.stream().collect(toMap(SubscriptionMessageFilterCompiler::getType, identity()));
     }
 
     @Override

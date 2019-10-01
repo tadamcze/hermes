@@ -10,13 +10,9 @@ import pl.allegro.tech.hermes.common.hook.Hook;
 import pl.allegro.tech.hermes.common.hook.HooksHandler;
 import pl.allegro.tech.hermes.common.hook.ServiceAwareHook;
 import pl.allegro.tech.hermes.common.kafka.KafkaNamesMapper;
+import pl.allegro.tech.hermes.consumers.consumer.filtering.CustomizedMessageFilters;
 import pl.allegro.tech.hermes.consumers.consumer.filtering.MessageFilter;
-import pl.allegro.tech.hermes.consumers.consumer.filtering.MessageFilterSource;
-import pl.allegro.tech.hermes.consumers.consumer.filtering.MessageFilters;
 import pl.allegro.tech.hermes.consumers.consumer.filtering.SubscriptionMessageFilterCompiler;
-import pl.allegro.tech.hermes.consumers.consumer.filtering.avro.AvroPathSubscriptionMessageFilterCompiler;
-import pl.allegro.tech.hermes.consumers.consumer.filtering.header.HeaderSubscriptionMessageFilterCompiler;
-import pl.allegro.tech.hermes.consumers.consumer.filtering.json.JsonPathSubscriptionMessageFilterCompiler;
 import pl.allegro.tech.hermes.consumers.consumer.sender.ProtocolMessageSenderProvider;
 import pl.allegro.tech.hermes.consumers.di.ConsumersBinder;
 import pl.allegro.tech.hermes.consumers.di.TrackersBinder;
@@ -115,7 +111,7 @@ public final class HermesConsumersBuilder {
     }
 
     public HermesConsumers build() {
-        withBinding(buildFilters(), MessageFilterSource.class);
+        withBinding(new CustomizedMessageFilters(globalFilters, filters), CustomizedMessageFilters.class);
         binders.add(new TrackersBinder(new ArrayList<>()));
 
         messageSenderProviders.add(
@@ -128,13 +124,5 @@ public final class HermesConsumersBuilder {
                 "jms", locator -> locator.getService(ProtocolMessageSenderProvider.class, "defaultJmsMessageSenderProvider")
         );
         return new HermesConsumers(hooksHandler, binders, messageSenderProviders, logRepositories, flushLogsShutdownHookEnabled);
-    }
-
-    private MessageFilters buildFilters() {
-        List<SubscriptionMessageFilterCompiler> availableFilters = new ArrayList<>(filters);
-        availableFilters.add(new JsonPathSubscriptionMessageFilterCompiler());
-        availableFilters.add(new AvroPathSubscriptionMessageFilterCompiler());
-        availableFilters.add(new HeaderSubscriptionMessageFilterCompiler());
-        return new MessageFilters(globalFilters, availableFilters);
     }
 }

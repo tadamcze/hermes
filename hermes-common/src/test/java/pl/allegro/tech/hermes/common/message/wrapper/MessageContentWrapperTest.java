@@ -7,6 +7,8 @@ import org.apache.commons.collections4.map.HashedMap;
 import org.junit.Before;
 import org.junit.Test;
 import pl.allegro.tech.hermes.api.Topic;
+import pl.allegro.tech.hermes.common.message.converter.AvroRecordConverter;
+import pl.allegro.tech.hermes.common.message.converter.DefaultGenericDatumReaderFactory;
 import pl.allegro.tech.hermes.schema.CompiledSchema;
 import pl.allegro.tech.hermes.schema.CompiledSchemaRepository;
 import pl.allegro.tech.hermes.schema.SchemaRepository;
@@ -35,7 +37,8 @@ public class MessageContentWrapperTest {
     private final DeserializationMetrics metrics = new DeserializationMetrics(metricRegistry);
 
     private final JsonMessageContentWrapper jsonWrapper = new JsonMessageContentWrapper("message", "metadata", new ObjectMapper());
-    private final AvroMessageContentWrapper avroWrapper = new AvroMessageContentWrapper(Clock.systemDefaultZone());
+    private final AvroRecordConverter avroRecordConverter = new AvroRecordConverter(new DefaultGenericDatumReaderFactory());
+    private final AvroMessageContentWrapper avroWrapper = new AvroMessageContentWrapper(Clock.systemDefaultZone(), avroRecordConverter);
     private final MessageContentWrapper messageContentWrapper = new MessageContentWrapper(jsonWrapper, avroWrapper,
             schemaRepository, () -> true, metrics);
 

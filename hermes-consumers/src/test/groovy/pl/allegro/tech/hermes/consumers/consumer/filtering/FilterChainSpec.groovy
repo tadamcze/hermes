@@ -1,6 +1,8 @@
 package pl.allegro.tech.hermes.consumers.consumer.filtering
 
 import pl.allegro.tech.hermes.api.MessageFilterSpecification
+import pl.allegro.tech.hermes.common.message.converter.AvroRecordConverter
+import pl.allegro.tech.hermes.common.message.converter.DefaultGenericDatumReaderFactory
 import pl.allegro.tech.hermes.consumers.consumer.Message
 import pl.allegro.tech.hermes.consumers.consumer.filtering.chain.FilterChainFactory
 import spock.lang.Specification
@@ -20,7 +22,7 @@ class FilterChainSpec extends Specification {
     def globalFilter1 = new RecordingSubscriptionMessageFilterCompiler("g1", counter)
     def globalFilter2 = new RecordingSubscriptionMessageFilterCompiler("g2", counter)
 
-    def filterSource = new MessageFilters([globalFilter1, globalFilter2], [subscriptionFilter1, subscriptionFilter2])
+    def filterSource = createMessageFilters([globalFilter1, globalFilter2], [subscriptionFilter1, subscriptionFilter2])
 
     def brokenFilter = new BrokenSubscriptionMessageFilterCompiler("b1", counter)
 
@@ -68,7 +70,7 @@ class FilterChainSpec extends Specification {
 
     def "should apply subscription specific filters if no global filters are declared"() {
         given:
-        def filterSource = new MessageFilters([], [subscriptionFilter1, subscriptionFilter2])
+        def filterSource = createMessageFilters([], [subscriptionFilter1, subscriptionFilter2])
         def subscription = subscription("g.topic", "subscription")
                 .withFilter(new MessageFilterSpecification(["type":"$subscriptionFilter1.type".toString()]))
                 .withFilter(new MessageFilterSpecification(["type":"$subscriptionFilter2.type".toString()]))
@@ -84,7 +86,7 @@ class FilterChainSpec extends Specification {
 
     def "should pass message for no filters"() {
         given:
-        def filterSource = new MessageFilters([], [])
+        def filterSource = createMessageFilters([], [])
         def subscription = subscription("g.topic", "subscription").build()
 
         expect:
@@ -93,7 +95,7 @@ class FilterChainSpec extends Specification {
 
     def "should not pass message if filter is throwing exception"() {
         given:
-        def filterSource = new MessageFilters([brokenFilter], [])
+        def filterSource = createMessageFilters([brokenFilter], [])
         def subscription = subscription("g.topic", "subscription").build()
 
         when:
@@ -106,7 +108,7 @@ class FilterChainSpec extends Specification {
 
     def "should break on first filter that is failing"() {
         given:
-        def filterSource = new MessageFilters([globalFilter1, brokenFilter], [subscriptionFilter1, subscriptionFilter2])
+        def filterSource = createMessageFilters([globalFilter1, brokenFilter], [subscriptionFilter1, subscriptionFilter2])
         def subscription = subscription("g.topic", "subscription")
                 .withFilter(new MessageFilterSpecification(["type":"$subscriptionFilter1.type".toString()])).build()
 
@@ -157,5 +159,13 @@ class FilterChainSpec extends Specification {
             super.test(message)
             throw new IllegalStateException()
         }
+    }
+
+    private static MessageFilters createMessageFilters(List<MessageFilter> globalFilters,
+                                                       List<SubscriptionMessageFilterCompiler> subscriptionFilters) {
+        return new MessageFilters(
+                new AvroRecordConverter(new DefaultGenericDatumReaderFactory()),
+                new CustomizedMessageFilters(globalFilters, subscriptionFilters)
+        )
     }
 }
